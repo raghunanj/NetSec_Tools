@@ -75,6 +75,13 @@ struct sniff_tcp {
 	u_short th_urp;		/* urgent pointer */
 };
 
+/* UDP header */
+
+struct sniff_udp {
+	u_short uh_sport;
+	u_short uh_dport;
+	u_short uh_sum;
+};
 
 
 
@@ -190,11 +197,13 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *pa
 	const struct sniff_ethernet *ethernet;  /* The ethernet header [1] */
 	const struct sniff_ip *ip;              /* The IP header */
 	const struct sniff_tcp *tcp;            /* The TCP header */
+	const struct sniff_udp *udp;			/* The UDP header */
 	const char *payload;                    /* Packet payload */
 
 	int size_ip;
 	int size_tcp;
 	int size_payload;
+	int size_udp;
 	
 	printf("\nPacket number %d:\n", count);
 	count++;
@@ -218,9 +227,49 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *pa
 	switch(ip->ip_p) {
 		case IPPROTO_TCP:
 			printf("   Protocol: TCP\n");
+			/* define/compute tcp header offset */
+			tcp = (struct sniff_tcp*)(packet + SIZE_ETHERNET + size_ip);
+			size_tcp = TH_OFF(tcp)*4;
+			if (size_tcp < 20) {
+				printf("   * Invalid TCP header length: %u bytes\n", size_tcp);
+				return;
+			}
+			/* define/compute tcp payload (segment) offset */
+			payload = (u_char *)(packet + SIZE_ETHERNET + size_ip + size_tcp);
+			/* compute tcp payload (segment) size */
+			size_payload = ntohs(ip->ip_len) - (size_ip + size_tcp);
+
+			if (size_payload > 0){
+				char payload_s[size_payload];
+				strncpy(payload_s, payload, size_payload);
+			}
+			else{
+				return;
+			}
 			break;
 		case IPPROTO_UDP:
 			printf("   Protocol: UDP\n");
+			/* define/compute tcp header offset 
+			tcp = (struct sniff_udp*)(packet + SIZE_ETHERNET + size_ip);
+			size_tcp = TH_OFF(tcp)*4;
+			if (size_tcp < 20) {
+				printf("   * Invalid UCP header length: %u bytes\n", size_tcp);
+				return;
+			}
+			*/
+			/* define/compute tcp payload (segment) offset */
+			payload = (u_char *)(packet + SIZE_ETHERNET + size_ip + size_tcp);
+			/* compute tcp payload (segment) size */
+			size_payload = ntohs(ip->ip_len) - (size_ip + size_tcp);
+
+			if (size_payload > 0){
+				char payload_s[size_payload];
+				strncpy(payload_s, payload, size_payload);
+			}
+			else{
+				return;
+			}
+
 			return;
 		case IPPROTO_ICMP:
 			printf("   Protocol: ICMP\n");
@@ -237,22 +286,12 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *pa
 	 *  OK, this packet is TCP.
 	 */
 	
-	/* define/compute tcp header offset */
-	tcp = (struct sniff_tcp*)(packet + SIZE_ETHERNET + size_ip);
-	size_tcp = TH_OFF(tcp)*4;
-	if (size_tcp < 20) {
-		printf("   * Invalid TCP header length: %u bytes\n", size_tcp);
-		return;
-	}
+	
 	
 	printf("   Src port: %d\n", ntohs(tcp->th_sport));
 	printf("   Dst port: %d\n", ntohs(tcp->th_dport));
 	
-	/* define/compute tcp payload (segment) offset */
-	payload = (u_char *)(packet + SIZE_ETHERNET + size_ip + size_tcp);
 	
-	/* compute tcp payload (segment) size */
-	size_payload = ntohs(ip->ip_len) - (size_ip + size_tcp);
 	
 	/*
 	 * Print payload data; it might be binary, so don't just
