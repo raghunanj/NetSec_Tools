@@ -273,6 +273,7 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *pa
 			return;
 		case IPPROTO_ICMP:
 			printf("   Protocol: ICMP\n");
+			
 			return;
 		case IPPROTO_IP:
 			printf("   Protocol: IP\n");
@@ -324,11 +325,11 @@ int main(int argc, char **argv)
 	if (argc == 2) {
 		dev = argv[1];
 	}
-	else if (argc > 2) {
+	/*else if (argc > 2) {
 		fprintf(stderr, "error: unrecognized command-line options\n\n");
 		//print_app_usage();
 		exit(EXIT_FAILURE);
-	}
+	}*/
 	else {
 		/* find a capture device if not specified on command-line */
 		dev = pcap_lookupdev(errbuf);
