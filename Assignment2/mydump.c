@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <pcap.h>
 #include <netinet/in.h>
+#include <net/ethernet.h>
 #include <string.h>
 #include <stdlib.h>
 
@@ -29,7 +30,7 @@ struct sniff_ethernet {
 	u_char ether_dhost[ETHER_ADDR_LEN]; /* Destination host address */
 	u_char ether_shost[ETHER_ADDR_LEN]; /* Source host address */
 	u_short ether_type; /* IP? ARP? RARP? etc */
-	const struct ether_addr eth_src, eth_dst;
+ 	const struct ether_addr eth_src[6], eth_dst[6];
 };
 
 /* IP header */
@@ -196,6 +197,16 @@ void print_payload(const u_char *payload, int len)
 return;
 }
 
+const char * eth_ntoa ( const void *ll_addr ) {
+         static char buf[18]; /* "00:00:00:00:00:00" */
+         const uint8_t *eth_addr = ll_addr;
+         printf ( buf, "%02x:%02x:%02x:%02x:%02x:%02x",
+                   eth_addr[0], eth_addr[1], eth_addr[2],
+                   eth_addr[3], eth_addr[4], eth_addr[5] );
+         return buf;
+ }
+
+
 void StrWrapper(int strCheck_flag, char *inputStr, const struct pcap_pkthdr *header, const u_char *packet){
 	const struct sniff_ethernet *ethernet;
 	const struct sniff_ip *ip;
@@ -219,10 +230,12 @@ void StrWrapper(int strCheck_flag, char *inputStr, const struct pcap_pkthdr *hea
 
 	if(ntohs(ethernet->ether_type) == ETHERTYPE_IPV4){
 		printf(" IPV4 ");
+
+
 		//const unsigned char* mac=(unsigned char*)ntohs(ethernet->ether_shost);
 		//printf("%02X:%02X:%02X:%02X:%02X:%02X\n ->",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
-		//printf("%s ->", ntohs(ethernet->ether_shost));
-		//printf("%s", ether_ntoa(ethernet->ether_dhost));
+		printf("%s -> ", ether_ntoa(ethernet->eth_src));
+		printf("%s ", ether_ntoa(ethernet->eth_dst));
 		ip = (struct sniff_ip*)(packet + SIZE_ETHERNET);
 		size_ip = IP_HL(ip)*4;
 		if (size_ip < 20) {
@@ -246,7 +259,7 @@ void StrWrapper(int strCheck_flag, char *inputStr, const struct pcap_pkthdr *hea
 
 			printf("%s.%d -> ", inet_ntoa(ip->ip_src), ntohs(tcp->th_sport));
 			printf("%s.%d ", inet_ntoa(ip->ip_dst), ntohs(tcp->th_dport));
-			printf("len %d", ntohs(ip->ip_len));
+			printf(" len %d ", ntohs(ip->ip_len));
 			/* define/compute tcp payload (segment) offset */
 			payload = (u_char *)(packet + SIZE_ETHERNET + size_ip + size_tcp);
 			/* compute tcp payload (segment) size */
@@ -254,7 +267,7 @@ void StrWrapper(int strCheck_flag, char *inputStr, const struct pcap_pkthdr *hea
 
 
 			if (size_payload > 0){
-				printf("(Payload size:%d) Payload :", size_payload);
+				printf(" Payload(%d) :", size_payload);
 				if(inputStr != NULL){
 					if (strstr(payload,inputStr) == NULL){
 						printf("I m flag %d \n",strCheck_flag);
@@ -286,7 +299,7 @@ void StrWrapper(int strCheck_flag, char *inputStr, const struct pcap_pkthdr *hea
 
 			printf("%s.%d -> ", inet_ntoa(ip->ip_src), ntohs(udp->uh_sport));
 			printf("%s.%d ", inet_ntoa(ip->ip_dst), ntohs(udp->uh_dport));
-			printf("len %d ", ntohs(ip->ip_len));
+			printf(" len %d ", ntohs(ip->ip_len));
 			/* define/compute tcp payload (segment) offset */
 			payload = (u_char *)(packet + SIZE_ETHERNET + size_ip + size_udp);
 			/* compute tcp payload (segment) size */
@@ -295,22 +308,22 @@ void StrWrapper(int strCheck_flag, char *inputStr, const struct pcap_pkthdr *hea
 
 
 			if (size_payload > 0){
-					printf("(Payload size:%d) Payload : ", size_payload);
+					printf(" Payload(%d) : ", size_payload);
 					print_payload(payload, size_payload);
 			}
 			printf("\n");
 		} else if (ip->ip_p == IPPROTO_ICMP) {
 			printf(" ICMP ");
-			printf("%s ->", inet_ntoa(ip->ip_src));
-			printf("%s", inet_ntoa(ip->ip_dst));
-			printf("length %d", ntohs(ip->ip_len));
+			printf("%s -> ", inet_ntoa(ip->ip_src));
+			printf("%s ", inet_ntoa(ip->ip_dst));
+			printf(" len %d ", ntohs(ip->ip_len));
 			payload = (u_char *)(packet + SIZE_ETHERNET + size_ip + size_icmp);
 			/* compute tcp payload (segment) size */
 			size_payload = ntohs(ip->ip_len) - (size_ip + size_icmp);
 
 
 			if (size_payload > 0){
-					printf("(Payload size:%d) Payload : ", size_payload);
+					printf(" Payload(%d) : ", size_payload);
 					print_payload(payload, size_payload);
 			}
 			printf("\n");
@@ -322,16 +335,16 @@ void StrWrapper(int strCheck_flag, char *inputStr, const struct pcap_pkthdr *hea
 			size_payload = ntohs(ip->ip_len) - (size_ip);
 
 			if (size_payload > 0){
-					printf("(Payload size:%d) Payload : ", size_payload);
+					printf(" Payload(%d) : ", size_payload);
 					print_payload(payload,size_payload);
 			}
 			printf("\n");	
 		}
 	}
-/*	else if (ntohs(ethernet->ether_type) == ETHERTYPE_ARP) {
-		printf("ARP\n");
+	else if (ntohs(ethernet->ether_type) == ETHERTYPE_ARP) {
+		printf(" ARP \n");
 	}
-*/	 
+	 
 	else {
 		printf("Not defined protocol\n");
 	}

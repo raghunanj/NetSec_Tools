@@ -1,11 +1,304 @@
+Homework 2: Passive Network Monitoring
+
+Goal:
+
+mydump [-i interface] [-r file] [-s string] expression
+
+-i  Live capture from the network device <interface> (e.g., eth0). If not
+    specified, mydump should automatically select a default interface to
+    listen on (hint 1). Capture should continue indefinitely until the user
+    terminates the program.
+
+-r  Read packets from <file> in tcpdump format (hint 2).
+
+-s  Keep only packets that contain <string> in their payload (after any BPF
+    filter is applied). You are not required to implement wildcard or regular
+    expression matching. A simple string matching operation should suffice
+    (hint 3).
+
+<expression> is a BPF filter that specifies which packets will be dumped. If
+no filter is given, all packets seen on the interface (or contained in the
+trace) should be dumped. Otherwise, only packets matching <expression> should
+be dumped.
+
+
+Assessment Documentation:
+
+The program only supports the following protocols:
+IPV4 - TCP, UDP, ICMP, other protocols
+Ethernet protocol & other (Not defined in the code) protocols.
+
+
+I have tested the code with my local machine using the hw1.pcap file from earlier assignment and en0 interface.
+
+Sample runs:
+
+1. sudo ./mydump -i en0
+
+Sat Oct 14 02:15:25 2017 IPV4 45:0:3:94:85:f2 -> a4:32:0:0:1:1  TCP 172.217.12.142.443 -> 172.24.22.247.51857  len 916  Payload(864) :00000   17 03 03 03 5b 00 00 00  00 00 00 00 09 4d c3 3b    ....[........M.;
+00016   7d 02 0d 59 8a c0 c1 12  dc 41 23 a3 d0 c8 44 99    }..Y.....A#...D.
+00032   5b 5d 98 fb 43 c8 44 32  d7 82 ca 45 dd 89 4b 26    []..C.D2...E..K&
+00048   ca c8 6c db e4 25 3a 4e  89 b1 ef 2b c9 11 36 56    ..l..%:N...+..6V
+00064   b6 78 8e 59 66 f9 f3 25  c1 2a fd 4a 22 e3 d5 83    .x.Yf..%.*.J"...
+00080   e0 d1 7e c1 36 a8 9e e0  76 fe e5 7a 7f 0c a6 28    ..~.6...v..z...(
+00096   ac 89 02 f3 4a c2 16 63  f9 de 21 b2 8a 08 19 ee    ....J..c..!.....
+00112   f8 03 fc a4 70 ab f8 69  96 50 89 73 df 5f 17 1c    ....p..i.P.s._..
+00128   b4 cc 8a b1 81 8a 3e 0d  47 ae d2 22 56 19 f5 ab    ......>.G.."V...
+00144   c6 e2 bd 3f b3 b7 ec a0  47 cd a9 d3 08 35 72 b1    ...?....G....5r.
+00160   99 11 c2 16 a9 5f 39 2e  a6 eb 67 d7 9e a6 bc 92    ....._9...g.....
+00176   55 cb e2 51 c6 e2 09 56  5a 40 73 64 4f 8c ee 59    U..Q...VZ@sdO..Y
+00192   57 8b ba 99 34 46 26 31  10 0e 0d 35 02 02 1a 3a    W...4F&1...5...:
+00208   67 0f 1d a8 c7 d4 db 1b  65 45 4c 6f a2 88 47 93    g.......eELo..G.
+00224   ac 9a 8b dd 3e 8c c1 ba  c6 6b b6 87 5a 45 00 7c    ....>....k..ZE.|
+00240   10 3d bf f7 ce 1d 4f 88  19 ce 6f 5b 0a 98 a0 43    .=....O...o[...C
+00256   39 bb 24 08 3f 9d 11 44  fd aa b5 8f 31 e4 95 ba    9.$.?..D....1...
+00272   fb cc d7 08 ca ae 76 ea  a4 50 98 22 53 1b 8a 54    ......v..P."S..T
+00288   68 6b 94 fe e2 93 af cc  cd 06 e4 0b 4e e2 5d 9e    hk..........N.].
+00304   4e ad 5d ff 81 43 f2 35  dc 20 14 2a b9 1f 04 8e    N.]..C.5. .*....
+00320   a2 62 b0 24 bd 3e d4 2a  7f cf f3 e1 7a a0 61 0a    .b.$.>.*....z.a.
+00336   53 24 3f 61 43 94 65 91  da 3a 54 e5 cc 0c 0e fd    S$?aC.e..:T.....
+00352   9d 5c c3 54 77 76 f3 44  e3 0d 7a 11 7e 0c fc 2c    .\.Twv.D..z.~..,
+00368   69 43 81 a6 f8 4f 6d 35  37 c0 5f ca 1c 33 51 71    iC...Om57._..3Qq
+00384   22 57 3d da f5 ed aa fd  8f 46 4c 40 1b e3 dd f5    "W=......FL@....
+00400   e1 60 20 90 bb c5 26 0a  60 02 1a be d6 9d d2 7d    .` ...&.`......}
+00416   ea c4 33 3d 4f 56 35 72  3b e5 6b e8 27 d9 46 fb    ..3=OV5r;.k.'.F.
+00432   f6 31 39 f8 9e 9e c7 1a  0e 2d bc 86 e0 3c 73 b5    .19......-...<s.
+00448   0e 92 0f ee ef 31 d4 0d  bf eb 3c a8 d6 bf 2d 99    .....1....<...-.
+00464   e9 92 42 ec ca 16 ed 62  51 5d 70 eb 2a 92 5c 38    ..B....bQ]p.*.\8
+00480   62 26 60 60 e1 85 71 14  c3 63 e3 c6 da 0a 3a df    b&``..q..c....:.
+00496   d7 4b 8e a0 bd f2 bb 99  97 20 2f 9c 85 64 61 9a    .K....... /..da.
+00512   33 f6 a4 20 43 b5 85 4c  52 90 c6 62 31 bf 08 3e    3.. C..LR..b1..>
+00528   1b cf e1 c7 37 bb e4 6c  b4 d3 aa f3 69 f7 7f c8    ....7..l....i...
+00544   4c 7b 17 27 8c d5 ce 4d  6f 2c b4 20 93 05 96 56    L{.'...Mo,. ...V
+00560   b0 01 8c f3 fe 13 08 26  a6 31 ed de 03 d5 0a 13    .......&.1......
+00576   70 ae 43 dd 1d db c8 a1  ec f6 16 b7 a8 80 7e ea    p.C...........~.
+00592   ae b2 8c 8e 66 58 91 b6  e8 84 ef 5f 7d 4a b4 8f    ....fX....._}J..
+00608   e2 48 e3 8b 67 8a f2 10  41 ea 46 6f 83 57 b0 9f    .H..g...A.Fo.W..
+00624   3b 90 fa b4 65 48 3d 3f  61 bf f9 f4 91 55 47 63    ;...eH=?a....UGc
+00640   31 69 01 fa e7 49 0d 12  96 eb d7 73 d3 74 10 e8    1i...I.....s.t..
+00656   05 19 13 18 10 83 5e 22  a9 41 3b bc e7 99 31 48    ......^".A;...1H
+00672   f3 92 d4 67 d8 c0 a2 2d  ad 86 9b f2 b1 29 04 a9    ...g...-.....)..
+00688   4e d7 bd 8a 10 51 4c 00  79 ad 77 d8 68 22 18 d5    N....QL.y.w.h"..
+00704   b5 a9 ce 1c 4f c9 e8 d3  20 0d c7 3a 22 41 6a af    ....O... ..:"Aj.
+00720   94 d6 c7 65 a8 e0 96 80  43 15 6e 0b 28 5b 99 f0    ...e....C.n.([..
+00736   4b 46 bb fd 85 90 6f 73  b4 93 ed 1b 37 35 15 ce    KF....os....75..
+00752   8f 68 c1 d2 82 38 26 68  47 b7 55 26 aa 63 d9 c9    .h...8&hG.U&.c..
+00768   47 d1 37 60 c3 40 e5 d0  16 13 1d 69 06 fc 1a e7    G.7`.@.....i....
+00784   f7 0e 48 1d 1f 6c bd 03  80 4e 07 cd ee f1 eb 3f    ..H..l...N.....?
+00800   68 91 a5 14 bc 4f 9e 2f  b2 12 cb 48 f7 3f 92 02    h....O./...H.?..
+00816   ad a7 ee 78 04 b1 f3 e5  b4 b7 83 74 54 ca 87 43    ...x.......tT..C
+00832   ab 9a 89 74 7d bc e3 2d  a6 c6 01 ca 7b 38 85 84    ...t}..-....{8..
+00848   39 71 c0 de c5 23 3d 45  8a d5 d4 7c b3 21 2f 26    9q...#=E...|.!/&
+
+Sat Oct 14 02:15:25 2017 IPV4 45:0:0:8a:85:f4 -> b6:5e:0:0:1:1  TCP 172.217.12.142.443 -> 172.24.22.247.51857  len 138  Payload(86) :00000   17 03 03 00 51 00 00 00  00 00 00 00 0a ee 41 85    ....Q.........A.
+00016   ba ff 61 48 a9 05 ce 1f  a4 2f 80 88 17 7d 45 47    ..aH...../...}EG
+00032   02 84 82 27 68 70 13 17  e8 d9 15 f2 04 e2 49 e2    ...'hp........I.
+00048   b7 c5 f1 32 00 bb 08 39  b5 28 ea d3 85 54 c8 99    ...2...9.(...T..
+00064   62 67 c5 bb 1e 83 a0 71  70 a4 26 47 93 4d 20 64    bg.....qp.&G.M d
+00080   9f b6 73 00 35 45                                   ..s.5E
+
+Sat Oct 14 02:15:25 2017 IPV4 45:0:0:9b:85:f5 -> 85:71:0:0:1:1  TCP 172.217.12.142.443 -> 172.24.22.247.51857  len 155  Payload(103) :00000   17 03 03 00 62 00 00 00  00 00 00 00 0b 45 0e 9a    ....b........E..
+00016   01 fe 01 98 ac 0f 81 b5  20 6f 19 63 2f fb 68 b0    ........ o.c/.h.
+00032   8b 86 f1 00 5e 93 1d 3a  1e 87 2d 3e 29 19 7d d7    ....^..:..->).}.
+00048   b7 11 3f ff 1c 99 7f 9f  03 4c af 8d c8 c7 ee 7d    ..?......L.....}
+00064   cf 2a f6 4f 48 62 2d ee  3e b5 3e 8b 2d 25 b5 d2    .*.OHb-.>.>.-%..
+00080   a1 83 ca 40 a4 7b bf 8b  e8 a9 da 7b b9 50 8c 8d    ...@.{.....{.P..
+00096   80 35 22 82 73 78 57                                .5".sxW
+
+2. ./mydump -r hw1.pcap "tcp"
+
+Mon Jan 14 02:52:55 2013 IPV4 45:0:0:e6:d7:df -> f6:7b:0:0:1:1  TCP 91.189.91.14.80 -> 192.168.0.200.54634  len 230  Payload(178) :00000   48 54 54 50 2f 31 2e 31  20 33 30 34 20 4e 6f 74    HTTP/1.1 304 Not
+00016   20 4d 6f 64 69 66 69 65  64 0d 0a 44 61 74 65 3a     Modified..Date:
+00032   20 4d 6f 6e 2c 20 31 34  20 4a 61 6e 20 32 30 31     Mon, 14 Jan 201
+00048   33 20 30 37 3a 35 33 3a  34 37 20 47 4d 54 0d 0a    3 07:53:47 GMT..
+00064   53 65 72 76 65 72 3a 20  41 70 61 63 68 65 2f 32    Server: Apache/2
+00080   2e 32 2e 32 32 20 28 55  62 75 6e 74 75 29 0d 0a    .2.22 (Ubuntu)..
+00096   43 6f 6e 6e 65 63 74 69  6f 6e 3a 20 4b 65 65 70    Connection: Keep
+00112   2d 41 6c 69 76 65 0d 0a  4b 65 65 70 2d 41 6c 69    -Alive..Keep-Ali
+00128   76 65 3a 20 74 69 6d 65  6f 75 74 3d 35 2c 20 6d    ve: timeout=5, m
+00144   61 78 3d 34 36 0d 0a 45  54 61 67 3a 20 22 65 2d    ax=46..ETag: "e-
+00160   34 62 30 30 38 63 39 65  30 37 35 30 30 22 0d 0a    4b008c9e07500"..
+00176   0d 0a                                               ..
+
+Mon Jan 14 02:52:55 2013 IPV4 45:0:0:e6:d7:e0 -> f6:c9:0:0:1:1  TCP 91.189.91.14.80 -> 192.168.0.200.54634  len 230  Payload(178) :00000   48 54 54 50 2f 31 2e 31  20 33 30 34 20 4e 6f 74    HTTP/1.1 304 Not
+00016   20 4d 6f 64 69 66 69 65  64 0d 0a 44 61 74 65 3a     Modified..Date:
+00032   20 4d 6f 6e 2c 20 31 34  20 4a 61 6e 20 32 30 31     Mon, 14 Jan 201
+00048   33 20 30 37 3a 35 33 3a  34 37 20 47 4d 54 0d 0a    3 07:53:47 GMT..
+00064   53 65 72 76 65 72 3a 20  41 70 61 63 68 65 2f 32    Server: Apache/2
+00080   2e 32 2e 32 32 20 28 55  62 75 6e 74 75 29 0d 0a    .2.22 (Ubuntu)..
+00096   43 6f 6e 6e 65 63 74 69  6f 6e 3a 20 4b 65 65 70    Connection: Keep
+00112   2d 41 6c 69 76 65 0d 0a  4b 65 65 70 2d 41 6c 69    -Alive..Keep-Ali
+00128   76 65 3a 20 74 69 6d 65  6f 75 74 3d 35 2c 20 6d    ve: timeout=5, m
+00144   61 78 3d 34 35 0d 0a 45  54 61 67 3a 20 22 65 2d    ax=45..ETag: "e-
+00160   34 62 30 30 38 63 39 65  30 37 35 30 30 22 0d 0a    4b008c9e07500"..
+00176   0d 0a                                               ..
+
+Mon Jan 14 02:52:55 2013 IPV4 45:0:0:34:40:7c -> 78:62:0:0:1:1  TCP 192.168.0.200.54634 -> 91.189.91.14.80  len 52
+Mon Jan 14 02:52:55 2013 IPV4 45:0:0:e9:d7:e1 -> 50:33:0:0:1:1  TCP 91.189.91.14.80 -> 192.168.0.200.54634  len 233  Payload(181) :00000   48 54 54 50 2f 31 2e 31  20 33 30 34 20 4e 6f 74    HTTP/1.1 304 Not
+00016   20 4d 6f 64 69 66 69 65  64 0d 0a 44 61 74 65 3a     Modified..Date:
+00032   20 4d 6f 6e 2c 20 31 34  20 4a 61 6e 20 32 30 31     Mon, 14 Jan 201
+00048   33 20 30 37 3a 35 33 3a  34 37 20 47 4d 54 0d 0a    3 07:53:47 GMT..
+00064   53 65 72 76 65 72 3a 20  41 70 61 63 68 65 2f 32    Server: Apache/2
+00080   2e 32 2e 32 32 20 28 55  62 75 6e 74 75 29 0d 0a    .2.22 (Ubuntu)..
+00096   43 6f 6e 6e 65 63 74 69  6f 6e 3a 20 4b 65 65 70    Connection: Keep
+00112   2d 41 6c 69 76 65 0d 0a  4b 65 65 70 2d 41 6c 69    -Alive..Keep-Ali
+00128   76 65 3a 20 74 69 6d 65  6f 75 74 3d 35 2c 20 6d    ve: timeout=5, m
+00144   61 78 3d 34 34 0d 0a 45  54 61 67 3a 20 22 32 65    ax=44..ETag: "2e
+00160   35 61 2d 34 63 63 30 66  65 33 38 62 61 63 34 30    5a-4cc0fe38bac40
+00176   22 0d 0a 0d 0a                                      "....
+
+
+3. ./mydump -r hw1.pcap "udp"
+
+
+Sun Jan 13 06:38:22 2013 IPV4 45:0:1:d6:0:c7 -> 20:48:54:54:50:2f  UDP 192.168.0.3.1900 -> 239.255.255.250.1900  len 470  Payload(442) : 00000   4e 4f 54 49 46 59 20 2a  20 48 54 54 50 2f 31 2e    NOTIFY * HTTP/1.
+00016   31 0d 0a 48 6f 73 74 3a  32 33 39 2e 32 35 35 2e    1..Host:239.255.
+00032   32 35 35 2e 32 35 30 3a  31 39 30 30 0d 0a 4e 54    255.250:1900..NT
+00048   3a 75 75 69 64 3a 35 37  35 33 30 66 36 32 2d 36    :uuid:57530f62-6
+00064   61 39 37 2d 34 62 65 33  2d 39 61 63 62 2d 63 38    a97-4be3-9acb-c8
+00080   35 36 36 66 35 62 31 31  66 32 0d 0a 4e 54 53 3a    566f5b11f2..NTS:
+00096   73 73 64 70 3a 61 6c 69  76 65 0d 0a 4c 6f 63 61    ssdp:alive..Loca
+00112   74 69 6f 6e 3a 68 74 74  70 3a 2f 2f 31 39 32 2e    tion:http://192.
+00128   31 36 38 2e 30 2e 33 3a  32 38 36 39 2f 75 70 6e    168.0.3:2869/upn
+00144   70 68 6f 73 74 2f 75 64  68 69 73 61 70 69 2e 64    phost/udhisapi.d
+00160   6c 6c 3f 63 6f 6e 74 65  6e 74 3d 75 75 69 64 3a    ll?content=uuid:
+00176   35 37 35 33 30 66 36 32  2d 36 61 39 37 2d 34 62    57530f62-6a97-4b
+00192   65 33 2d 39 61 63 62 2d  63 38 35 36 36 66 35 62    e3-9acb-c8566f5b
+00208   31 31 66 32 0d 0a 55 53  4e 3a 75 75 69 64 3a 35    11f2..USN:uuid:5
+00224   37 35 33 30 66 36 32 2d  36 61 39 37 2d 34 62 65    7530f62-6a97-4be
+00240   33 2d 39 61 63 62 2d 63  38 35 36 36 66 35 62 31    3-9acb-c8566f5b1
+00256   31 66 32 0d 0a 43 61 63  68 65 2d 43 6f 6e 74 72    1f2..Cache-Contr
+00272   6f 6c 3a 6d 61 78 2d 61  67 65 3d 39 30 30 0d 0a    ol:max-age=900..
+00288   53 65 72 76 65 72 3a 4d  69 63 72 6f 73 6f 66 74    Server:Microsoft
+00304   2d 57 69 6e 64 6f 77 73  2d 4e 54 2f 35 2e 31 20    -Windows-NT/5.1
+00320   55 50 6e 50 2f 31 2e 30  20 55 50 6e 50 2d 44 65    UPnP/1.0 UPnP-De
+00336   76 69 63 65 2d 48 6f 73  74 2f 31 2e 30 0d 0a 4f    vice-Host/1.0..O
+00352   50 54 3a 22 68 74 74 70  3a 2f 2f 73 63 68 65 6d    PT:"http://schem
+00368   61 73 2e 75 70 6e 70 2e  6f 72 67 2f 75 70 6e 70    as.upnp.org/upnp
+00384   2f 31 2f 30 2f 22 3b 20  6e 73 3d 30 31 0d 0a 30    /1/0/"; ns=01..0
+00400   31 2d 4e 4c 53 3a 33 34  33 35 64 64 66 63 66 32    1-NLS:3435ddfcf2
+00416   32 64 66 61 62 33 38 32  62 33 65 66 32 62 31 66    2dfab382b3ef2b1f
+00432   34 34 30 38 64 39 0d 0a  0d 0a                      4408d9....
+
+Sun Jan 13 06:38:22 2013 IPV4 45:0:2:f:0:c8 -> 20:48:54:54:50:2f  UDP 192.168.0.3.1900 -> 239.255.255.250.1900  len 527  Payload(499) : 00000   4e 4f 54 49 46 59 20 2a  20 48 54 54 50 2f 31 2e    NOTIFY * HTTP/1.
+00016   31 0d 0a 48 6f 73 74 3a  32 33 39 2e 32 35 35 2e    1..Host:239.255.
+00032   32 35 35 2e 32 35 30 3a  31 39 30 30 0d 0a 4e 54    255.250:1900..NT
+00048   3a 75 72 6e 3a 73 63 68  65 6d 61 73 2d 75 70 6e    :urn:schemas-upn
+00064   70 2d 6f 72 67 3a 73 65  72 76 69 63 65 3a 43 6f    p-org:service:Co
+00080   6e 6e 65 63 74 69 6f 6e  4d 61 6e 61 67 65 72 3a    nnectionManager:
+00096   31 0d 0a 4e 54 53 3a 73  73 64 70 3a 61 6c 69 76    1..NTS:ssdp:aliv
+00112   65 0d 0a 4c 6f 63 61 74  69 6f 6e 3a 68 74 74 70    e..Location:http
+00128   3a 2f 2f 31 39 32 2e 31  36 38 2e 30 2e 33 3a 32    ://192.168.0.3:2
+00144   38 36 39 2f 75 70 6e 70  68 6f 73 74 2f 75 64 68    869/upnphost/udh
+00160   69 73 61 70 69 2e 64 6c  6c 3f 63 6f 6e 74 65 6e    isapi.dll?conten
+00176   74 3d 75 75 69 64 3a 35  37 35 33 30 66 36 32 2d    t=uuid:57530f62-
+00192   36 61 39 37 2d 34 62 65  33 2d 39 61 63 62 2d 63    6a97-4be3-9acb-c
+00208   38 35 36 36 66 35 62 31  31 66 32 0d 0a 55 53 4e    8566f5b11f2..USN
+00224   3a 75 75 69 64 3a 35 37  35 33 30 66 36 32 2d 36    :uuid:57530f62-6
+00240   61 39 37 2d 34 62 65 33  2d 39 61 63 62 2d 63 38    a97-4be3-9acb-c8
+00256   35 36 36 66 35 62 31 31  66 32 3a 3a 75 72 6e 3a    566f5b11f2::urn:
+00272   73 63 68 65 6d 61 73 2d  75 70 6e 70 2d 6f 72 67    schemas-upnp-org
+00288   3a 73 65 72 76 69 63 65  3a 43 6f 6e 6e 65 63 74    :service:Connect
+00304   69 6f 6e 4d 61 6e 61 67  65 72 3a 31 0d 0a 43 61    ionManager:1..Ca
+00320   63 68 65 2d 43 6f 6e 74  72 6f 6c 3a 6d 61 78 2d    che-Control:max-
+00336   61 67 65 3d 39 30 30 0d  0a 53 65 72 76 65 72 3a    age=900..Server:
+00352   4d 69 63 72 6f 73 6f 66  74 2d 57 69 6e 64 6f 77    Microsoft-Window
+00368   73 2d 4e 54 2f 35 2e 31  20 55 50 6e 50 2f 31 2e    s-NT/5.1 UPnP/1.
+00384   30^C00416   70 3a 2f 2f 73 63 68 65  6d 61 73 2e 75 70 6e 70    p://schemas.upnp
+
+
+4. ./mydump -r hw1.pcap "icmp"
+
+Lets start Passive Network Monitoring:
+Mon Jan 14 12:42:31 2013 IPV4 45:0:0:4c:eb:4a -> 2e:6:6a:5a:c0:a8  ICMP 1.234.31.20 -> 192.168.0.200  len 76  Payload(48) : 00000   45 00 00 30 00 00 40 00  2e 06 6a 5a c0 a8 00 c8    E..0..@...jZ....
+00016   01 ea 1f 14 00 50 7b 81  bd cd 09 c6 3a 35 22 b0    .....P{.....:5".
+00032   70 12 39 08 11 ab 00 00  02 04 05 b4 01 01 04 02    p.9.............
+
+
+	 capture complete
+
+5. ./mydump -r hw1.pcap -s "Sources"
+
+Mon Jan 14 02:52:54 2013 IPV4 45:0:2:3e:3f:bf -> 8e:9c:0:0:1:1  TCP 192.168.0.200.54634 -> 91.189.91.14.80  len 574  Payload(522) :00000   47 45 54 20 2f 75 62 75  6e 74 75 2f 64 69 73 74    GET /ubuntu/dist
+00016   73 2f 6f 6e 65 69 72 69  63 2d 62 61 63 6b 70 6f    s/oneiric-backpo
+00032   72 74 73 2f 6d 61 69 6e  2f 73 6f 75 72 63 65 2f    rts/main/source/
+00048   53 6f 75 72 63 65 73 2e  62 7a 32 20 48 54 54 50    Sources.bz2 HTTP
+00064   2f 31 2e 31 0d 0a 48 6f  73 74 3a 20 75 73 2e 61    /1.1..Host: us.a
+00080   72 63 68 69 76 65 2e 75  62 75 6e 74 75 2e 63 6f    rchive.ubuntu.co
+00096   6d 0d 0a 43 6f 6e 6e 65  63 74 69 6f 6e 3a 20 6b    m..Connection: k
+00112   65 65 70 2d 61 6c 69 76  65 0d 0a 43 61 63 68 65    eep-alive..Cache
+00128   2d 43 6f 6e 74 72 6f 6c  3a 20 6d 61 78 2d 61 67    -Control: max-ag
+00144   65 3d 30 0d 0a 49 66 2d  4d 6f 64 69 66 69 65 64    e=0..If-Modified
+00160   2d 53 69 6e 63 65 3a 20  4d 6f 6e 2c 20 31 35 20    -Since: Mon, 15
+00176   4f 63 74 20 32 30 31 32  20 30 32 3a 33 35 3a 31    Oct 2012 02:35:1
+00192   39 20 47 4d 54 0d 0a 55  73 65 72 2d 41 67 65 6e    9 GMT..User-Agen
+00208   74 3a 20 44 65 62 69 61  6e 20 41 50 54 2d 48 54    t: Debian APT-HT
+00224   54 50 2f 31 2e 33 20 28  30 2e 38 2e 31 36 7e 65    TP/1.3 (0.8.16~e
+00240   78 70 35 75 62 75 6e 74  75 31 33 2e 36 29 0d 0a    xp5ubuntu13.6)..
+00256   0d 0a 47 45 54 20 2f 75  62 75 6e 74 75 2f 64 69    ..GET /ubuntu/di
+00272   73 74 73 2f 6f 6e 65 69  72 69 63 2d 62 61 63 6b    sts/oneiric-back
+00288   70 6f 72 74 73 2f 72 65  73 74 72 69 63 74 65 64    ports/restricted
+00304   2f 73 6f 75 72 63 65 2f  53 6f 75 72 63 65 73 2e    /source/Sources.
+00320   62 7a 32 20 48 54 54 50  2f 31 2e 31 0d 0a 48 6f    bz2 HTTP/1.1..Ho
+00336   73 74 3a 20 75 73 2e 61  72 63 68 69 76 65 2e 75    st: us.archive.u
+00352   62 75 6e 74 75 2e 63 6f  6d 0d 0a 43 6f 6e 6e 65    buntu.com..Conne
+00368   63 74 69 6f 6e 3a 20 6b  65 65 70 2d 61 6c 69 76    ction: keep-aliv
+00384   65 0d 0a 43 61 63 68 65  2d 43 6f 6e 74 72 6f 6c    e..Cache-Control
+00400   3a 20 6d 61 78 2d 61 67  65 3d 30 0d 0a 49 66 2d    : max-age=0..If-
+00416   4d 6f 64 69 66 69 65 64  2d 53 69 6e 63 65 3a 20    Modified-Since:
+00432   4d 6f 6e 2c 20 31 35 20  4f 63 74 20 32 30 31 32    Mon, 15 Oct 2012
+00448   20 30 32 3a 33 35 3a 31  39 20 47 4d 54 0d 0a 55     02:35:19 GMT..U
+00464   73 65 72 2d 41 67 65 6e  74 3a 20 44 65 62 69 61    ser-Agent: Debia
+00480   6e 20 41 50 54 2d 48 54  54 50 2f 31 2e 33 20 28    n APT-HTTP/1.3 (
+00496   30 2e 38 2e 31 36 7e 65  78 70 35 75 62 75 6e 74    0.8.16~exp5ubunt
+00512   75 31 33 2e 36 29 0d 0a  0d 0a                      u13.6)....
+
+Mon Jan 14 02:52:54 2013 IPV4 45:0:2:42:40:35 -> c6:1e:0:0:1:1  TCP 192.168.0.200.54634 -> 91.189.91.14.80  len 578  Payload(526) :00000   47 45 54 20 2f 75 62 75  6e 74 75 2f 64 69 73 74    GET /ubuntu/dist
+00016   73 2f 6f 6e 65 69 72 69  63 2d 62 61 63 6b 70 6f    s/oneiric-backpo
+00032   72 74 73 2f 75 6e 69 76  65 72 73 65 2f 73 6f 75    rts/universe/sou
+00048   72 63 65 2f 53 6f 75 72  63 65 73 2e 62 7a 32 20    rce/Sources.bz2
+00064   48 54 54 50 2f 31 2e 31  0d 0a 48 6f 73 74 3a 20    HTTP/1.1..Host:
+00080   75 73 2e 61 72 63 68 69  76 65 2e 75 62 75 6e 74    us.archive.ubunt
+00096   75 2e 63 6f 6d 0d 0a 43  6f 6e 6e 65 63 74 69 6f    u.com..Connectio
+00112   6e 3a 20 6b 65 65 70 2d  61 6c 69 76 65 0d 0a 43    n: keep-alive..C
+00128   61 63 68 65 2d 43 6f 6e  74 72 6f 6c 3a 20 6d 61    ache-Control: ma
+00144   78 2d 61 67 65 3d 30 0d  0a 49 66 2d 4d 6f 64 69    x-age=0..If-Modi
+00160   66 69 65 64 2d 53 69 6e  63 65 3a 20 4d 6f 6e 2c    fied-Since: Mon,
+00176   20 31 35 20 4f 63 74 20  32 30 31 32 20 30 32 3a     15 Oct 2012 02:
+00192   33 35 3a 31 39 20 47 4d  54 0d 0a 55 73 65 72 2d    35:19 GMT..User-
+00208   41 67 65 6e 74 3a 20 44  65 62 69 61 6e 20 41 50    Agent: Debian AP
+00224   54 2d 48 54 54 50 2f 31  2e 33 20 28 30 2e 38 2e    T-HTTP/1.3 (0.8.
+00240   31 36 7e 65 78 70 35 75  62 75 6e 74 75 31 33 2e    16~exp5ubuntu13.
+00256   36 29 0d 0a 0d 0a 47 45  54 20 2f 75 62 75 6e 74    6)....GET /ubunt
+00272   75 2f 64 69 73 74 73 2f  6f 6e 65 69 72 69 63 2d    u/dists/oneiric-
+00288   62 61 63 6b 70 6f 72 74  73 2f 6d 75 6c 74 69 76    backports/multiv
+00304   65 72 73 65 2f 73 6f 75  72 63 65 2f 53 6f 75 72    erse/source/Sour
+00320   63 65 73 2e 62 7a 32 20  48 54 54 50 2f 31 2e 31    ces.bz2 HTTP/1.1
+00336   0d 0a 48 6f 73 74 3a 20  75 73 2e 61 72 63 68 69    ..Host: us.archi
+00352   76 65 2e 75 62 75 6e 74  75 2e 63 6f 6d 0d 0a 43    ve.ubuntu.com..C
+00368   6f 6e 6e 65 63 74 69 6f  6e 3a 20 6b 65 65 70 2d    onnection: keep-
+00384   61 6c 69 76 65 0d 0a 43  61 63 68 65 2d 43 6f 6e    alive..Cache-Con
+00400   74 72 6f 6c 3a 20 6d 61  78 2d 61 67 65 3d 30 0d    trol: max-age=0.
+00416   0a 49 66 2d 4d 6f 64 69  66 69 65 64 2d 53 69 6e    .If-Modified-Sin
+00432   63 65 3a 20 4d 6f 6e 2c  20 31 35 20 4f 63 74 20    ce: Mon, 15 Oct
+00448   32 30 31 32 20 30 32 3a  33 35 3a 31 39 20 47 4d    2012 02:35:19 GM
+00464   54 0d 0a 55 73 65 72 2d  41 67 65 6e 74 3a 20 44    T..User-Agent: D
+00480   65 62 69 61 6e 20 41 50  54 2d 48 54 54 50 2f 31    ebian APT-HTTP/1
+00496   2e 33 20 28 30 2e 38 2e  31 36 7e 65 78 70 35 75    .3 (0.8.16~exp5u
+00512   62 75 6e 74 75 31 33 2e  36 29 0d 0a 0d 0a          buntu13.6)....
+
+
+	 capture complete
 
 
 
+References:
 
-
-
-
-
+1. http://www.tcpdump.org/pcap.html
+2. http://www.tcpdump.org/linktypes.html
+3. http://www.tcpdump.org/sniffex.c
+4. http://www.tcpdump.org/manpages/pcap-filter.7.html
+5. https://stackoverflow.com
 
 
 
