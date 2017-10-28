@@ -28,6 +28,7 @@ The program only supports the following protocols:
 IPV4 - TCP, UDP, ICMP, other protocols
 Ethernet protocol & other (Not defined in the code) protocols.
 
+A simple Packet capture program which captures necessary packets and dumps them on the screen/ console giving the desired results. Includes some simple functions to parse the input string and a string wrapper class mostly handles all the simple cases and outputs the desired results on the console screen.
 
 I have tested the code with my local machine using the hw1.pcap file from earlier assignment and en0 interface.
 

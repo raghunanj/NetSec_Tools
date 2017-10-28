@@ -533,15 +533,11 @@ int main(int argc, char **argv)
 	char *string = NULL;
 	int type_0x800 = 0;
 	char *expression = NULL;
-	// compiled filter
 	struct bpf_program filter;
-	// http get and post filter before compiling
 	char filter_string[] = "(tcp port http) && ((tcp[32:4] = 0x47455420) || (tcp[((tcp[12:1] & 0xf0) >> 2):4] = 0x504f5354))";
-	// the struct to store packet header
+
 	struct pcap_pkthdr header;
-	// the actual packet
 	const u_char *packet;
-	// set counter to negative so sniffer will continue working
 	int cnt = -1;
 
 	while ((inputOptions = getopt(argc, argv, "i:r:s:g")) != -1) {
@@ -583,7 +579,7 @@ int main(int argc, char **argv)
 	if (optind == argc - 1)
 		expression = argv[optind];
 	else if (optind < argc -1) {
-		printf("Redundant arguments. Exiting...\n");
+		printf("Less args than expected\n");
 		return 0;
 	}
 	
@@ -596,8 +592,7 @@ int main(int argc, char **argv)
 		/* find a capture device if not specified on command-line */
 		interface = pcap_lookupdev(errbuf);
 		if (interface == NULL) {
-			printf("Error finding default device! Error message: %s\n\
-			Exiting...\n", errbuf);
+			printf("Couldn't find default device: %s\n", errbuf);
 			return 0;
 		}
 	}
@@ -608,32 +603,29 @@ int main(int argc, char **argv)
 	if (interface != NULL && file == NULL) {
 		/* get network number and mask associated with capture device */
 		if (pcap_lookupnet(interface, &net, &mask, errbuf) == -1) {
-			printf("Error getting ip and mask! Error message: %s\n", errbuf);
+			printf("Couldn't get netmask for device %s: %s\n", errbuf);
 			net = 0;
 			mask = 0;
 		}
 		/* open capture device */
 		handle = pcap_open_live(interface, BUFSIZ, 1, 1000, errbuf);
 		if (handle == NULL) {
-			printf("Error opening live! Error message: %s\n\
-			Existing...\n", errbuf);
+			printf("Couldn't open device %s: %s\n", errbuf);
 			return 0;
 		}
 	} else if (interface == NULL && file != NULL) {
 		handle = pcap_open_offline(file, errbuf);
 		if (handle == NULL) {
-			printf("Error opening file! Error message: %s\n\
-			Existing...\n", errbuf);
+			printf("Error message: %s\n\n", errbuf);
 			return 0;
 		}
 	} else {
-		printf("This shouldn't be printed out! Existing...\n");
 		return 0;
 	}
 	
 	
 	if (pcap_datalink(handle) != DLT_EN10MB) {
-		printf("Interface %s doesn't using ethernet header! Existing\n", interface);
+		printf("Interface %s \n", interface);
 		return 0;
 	}
 	
@@ -641,14 +633,12 @@ int main(int argc, char **argv)
 	if (type_0x800) {
 		
 		if (pcap_compile(handle, &filter, filter_string, 0, net) == -1) {
-			printf("Error compiling http filter! Error message: %s\n\
-			Existing...\n", pcap_geterr(handle));
+			printf("Couldn't parse filter %s: %s\n", pcap_geterr(handle));
 			return 0;
 		}
 		
 		if (pcap_setfilter(handle, &filter) == -1) {
-			printf("Error applying http filer! Error message: %s\n\
-			Existing...\n", pcap_geterr(handle));
+			printf("Couldn't install filter %s: %s\n", pcap_geterr(handle));
 			return 0;
 		}
 	}
@@ -657,14 +647,12 @@ int main(int argc, char **argv)
 	if (expression != NULL) {
 		
 		if (pcap_compile(handle, &filter, expression, 0, net) == -1) {
-			printf("Error compiling expression! Error message: %s\n\
-			Existing...\n", pcap_geterr(handle));
+			printf("Couldn't parse filter %s: %s\n", pcap_geterr(handle));
 			return 0;
 		}
 		
 		if (pcap_setfilter(handle, &filter) == -1) {
-			printf("Error applying expression! Error message: %s\n\
-			Existing...\n", pcap_geterr(handle));
+			printf("Couldn't install filter %s: %s\n", pcap_geterr(handle));
 			return 0;
 		}
 	}
