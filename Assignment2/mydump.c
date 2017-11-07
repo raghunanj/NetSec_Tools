@@ -223,6 +223,7 @@ void StrWrapper(int strCheck_flag, char *inputStr, const struct pcap_pkthdr *hea
 	strcpy(tbuffer, tpoint);
 	int rag =strlen(tbuffer); 
 	tbuffer[(rag-1)] = 0;
+    //printf("Im here");
 	printf("%s",tbuffer);
 
 
