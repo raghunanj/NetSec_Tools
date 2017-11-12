@@ -77,7 +77,6 @@ void* server_process(void* th_p) {
 
 	conn_th* connected = (conn_th *)th_p;
 	char buf[4096];
-\
 	int ssh_flag = 0;
 
 	//Opening a socket connection
@@ -334,7 +333,7 @@ void main(int argc, char *argv[]) {
 
 		server_addr.sin_family = AF_INET;
 		server_addr.sin_port = htons(dst_port);
-		ssh_addr.sin_addr.s_addr = ((struct in_addr *) (host_pack->h_addr))->s_addr;
+		server_addr.sin_addr.s_addr = ((struct in_addr *) (host_pack->h_addr))->s_addr;
 
 		int cFlag = connect(fd_client, (struct sockaddr *)&server_addr, sizeof(server_addr));
 		if (cFlag == -1) {
@@ -357,7 +356,7 @@ void main(int argc, char *argv[]) {
 
 		int check;
 		while(1){
-			while((check = read(STDIN_FILENO, buf, 4096))>=0){			
+			while((check = read(STDIN_FILENO, buf, 4096))>0){			
 				if(!RAND_bytes(iv, 8)) {
 					fprintf(stderr, "Error: generating random bytes \n" );
 					exit(1);
