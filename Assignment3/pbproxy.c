@@ -12,6 +12,7 @@
 #include <netinet/in.h>
 #include <openssl/aes.h>
 #include <openssl/buffer.h>
+#include <openssl/hmac.h>
 #include <openssl/rand.h>
 
 typedef struct {
@@ -30,16 +31,16 @@ struct ctr_state {
 
 /*
 struct hostent {
-char*    h_name;       
-char**   h_aliases;    
- int      h_addrtype;   ;; host address type 
-int      h_length;     ;; length of address 
-char**   h_addr_list;  ;; list of addresses 
+	char*    h_name;       
+	char**   h_aliases;    
+ 	int      h_addrtype;   ;; host address type 
+	int      h_length;     ;; length of address 
+	char**   h_addr_list;  ;; list of addresses 
 }
 */
 
 char* read_file(char* filename){
-	char* buf = 0;
+	char* buf = NULL;
 	unsigned long len;
 	FILE *fd = fopen(filename, "rb");
 
@@ -72,15 +73,15 @@ void* server_process(void* th_p) {
 	if(!th_p) { 
 		pthread_exit(0);
 	}
-	//printf("Thread starts here");
+	printf("Thread starts here");
 
 	conn_th* connected = (conn_th *)th_p;
 	char buf[4096];
-	int fd;
+\
 	int ssh_flag = 0;
 
 	//Opening a socket connection
-	fd = socket(AF_INET, SOCK_STREAM, 0);
+	int fd = socket(AF_INET, SOCK_STREAM, 0);
 
 	int my_flag = connect(fd, (struct sockaddr *)&connected->ssh_addr, sizeof(connected->ssh_addr));
 
@@ -101,13 +102,14 @@ void* server_process(void* th_p) {
 		//Close connection as socket open error occurred.
 		close(connected->sock);
 		close(fd);
+		free(connected);
 		//Exit the thread.
 		pthread_exit(0);
 	}
 	fcntl(connected->sock, F_SETFL, dup_flag | O_NONBLOCK);
 
 	// GEt the File status flags
-	if(fcntl(fd, F_GETFL) == -1){
+	if((fcntl(fd, F_GETFL)) == -1){
 		printf("Error : Could not open the file ");
 		pthread_exit(0);
 	}
@@ -132,6 +134,7 @@ void* server_process(void* th_p) {
 				//Close connection as socket open error occurred.
 				close(connected->sock);
 				close(fd);
+				free(connected);
 				//Exit the thread.
 				pthread_exit(0);
 			}
@@ -166,6 +169,7 @@ void* server_process(void* th_p) {
 			memcpy(temp+8, encryptV, check);
 			//Relaying/writing the info on the socket
 			write(connected->sock, temp, check+8);
+			free(temp);
 		
 
 			//If all the info has been sent exit from the loop or connection
@@ -190,6 +194,7 @@ void* server_process(void* th_p) {
 	//Close connection as socket open error occurred.
 	close(connected->sock);
 	close(fd);
+	free(connected);
 	//Exit the thread.
 	pthread_exit(0);
 }
@@ -204,7 +209,7 @@ void main(int argc, char *argv[]) {
 	char *dest_port = NULL;
 
 	
-	while ((inputOptions = getopt(argc, argv, "l:k")) != -1) {
+	while ((inputOptions = getopt(argc, argv, "l:k:")) != -1) {
 		switch(inputOptions) {
 			case 'l':
 				source_port = optarg;
@@ -246,7 +251,7 @@ void main(int argc, char *argv[]) {
 		
 	}
 	
-	fprintf(stderr, "\n Execution starting with the PbProxy :\n server mode: %s\t listening port: %s\t key file: %s\t destination addr: %s\t destination port: %s\n", source_port, InpKeyFile,destn_host, dest_port);
+	fprintf(stderr, "\n Execution starting with the PbProxy :\n listening port: %s\t key file: %s\t destination addr: %s\t destination port: %s\n", source_port, InpKeyFile,destn_host, dest_port);
 
 	//Read the input Key File.
 	const char * Key = read_file(InpKeyFile);
