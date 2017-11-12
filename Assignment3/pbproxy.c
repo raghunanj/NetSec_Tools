@@ -69,7 +69,7 @@ int init_ctr(struct ctr_state *state, const unsigned char iv[8]) {
 
 void* server_process(void* th_p) {
 	//Exit case if the thread is not created.
-	if(!th_pointer) { 
+	if(!th_p) { 
 		pthread_exit(0);
 	}
 	//printf("Thread starts here");
@@ -84,9 +84,9 @@ void* server_process(void* th_p) {
 
 	int my_flag = connect(fd, (struct sockaddr *)&connected->ssh_addr, sizeof(connected->ssh_addr));
 
-	//Server socket conncetion status check
+	//Server socket connection status check
 	if (my_flag == -1) {
-		printf("Conncetion Unsuccessful :/ \n");
+		printf("connection Unsuccessful :/ \n");
 		//Exit the thread.
 		pthread_exit(0);
 	}
@@ -94,7 +94,7 @@ void* server_process(void* th_p) {
 		printf("Connection successful");
 	}
 
-	int dup_flag = fcntl(connection->sock, F_GETFL);
+	int dup_flag = fcntl(connected->sock, F_GETFL);
 
 	if (dup_flag == -1) {
 		printf( " First socket connection error ");
@@ -104,7 +104,7 @@ void* server_process(void* th_p) {
 		//Exit the thread.
 		pthread_exit(0);
 	}
-	fcntl(connected->sock, F_SETFL, flags | O_NONBLOCK);
+	fcntl(connected->sock, F_SETFL, dup_flag | O_NONBLOCK);
 
 	// GEt the File status flags
 	if(fcntl(fd, F_GETFL) == -1){
@@ -112,10 +112,10 @@ void* server_process(void* th_p) {
 		pthread_exit(0);
 	}
 	// SET the status as non blocking
-	fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+	fcntl(fd, F_SETFL, dup_flag | O_NONBLOCK);
 
 	struct ctr_state state;
-	AES_KEY aes_Key;
+	AES_KEY aes_key;
 	unsigned char iv[8];
 
 	if (AES_set_encrypt_key(connected->key, 128, &aes_key) < 0){
@@ -153,7 +153,7 @@ void* server_process(void* th_p) {
 		//When server is actually sending the info
 		while((check = read(fd, buf, 4096))>=0){			
 			if(!RAND_bytes(iv, 8)) {
-				fprintf(stderr, "Error: generating random bytes \n", );
+				fprintf(stderr, "Error: generating random bytes \n" );
 				exit(1);
 			}
 			// incrementing the IV by 8, adjustment factor
@@ -216,17 +216,17 @@ void main(int argc, char *argv[]) {
 			case '?':
 				if (optopt == 'l') {
 					fprintf(stderr, "Error:Port number missing in the arguments\n");
-					return 0;
+					
 				} else if (optopt == 'k') {
 					fprintf(stderr, "Error:No Key file in the argument\n");
-					return 0;
+					
 				} else {
 					fprintf(stderr, "Error: Absurd case\n");
-					return 0;
+					
 				}
 			default:
 				fprintf(stderr, "Error: Wrong arguments\n");
-				return 0;
+				
 		}
 	}
 	
@@ -238,12 +238,12 @@ void main(int argc, char *argv[]) {
 	else {
 		fprintf(stderr, "Error: %d, Args Count :/  %d\n", optind, argc);
 		fprintf(stderr, "Error: Wrong destn host/ip and port\n");
-		return 0;
+		
 	}
 	
 	if (InpKeyFile == NULL) {
 		fprintf(stderr, "No Key?\n");
-		return 0;
+		
 	}
 	
 	fprintf(stderr, "\n Execution starting with the PbProxy :\n server mode: %s\t listening port: %s\t key file: %s\t destination addr: %s\t destination port: %s\n", source_port, InpKeyFile,destn_host, dest_port);
@@ -252,7 +252,7 @@ void main(int argc, char *argv[]) {
 	const char * Key = read_file(InpKeyFile);
 	if(!Key) {
 		fprintf(stderr, "Error: Key Reading has failed!");
-		return 0;
+		
 	}
 
 	struct hostent *host_pack;
@@ -267,8 +267,8 @@ void main(int argc, char *argv[]) {
 
 	*/
 	if((host_pack = gethostbyname(destn_host))==0){
-		fprintf(stderr, "Error: Not able to find the host name(hostent)\n", );
-		return 0;
+		fprintf(stderr, "Error: Not able to find the host name(hostent)\n" );
+		
 	}
 
 
@@ -286,7 +286,8 @@ void main(int argc, char *argv[]) {
 	bzero(&server_addr,sizeof(ssh_addr));
 
 	if(flag_server){
-		conn_th *conncetion;
+		//conn_th* connected = (conn_th *)th_p;
+		
 		pthread_t thread;
 		int fd = socket(AF_INET, SOCK_STREAM,0);
 
@@ -304,20 +305,20 @@ void main(int argc, char *argv[]) {
 		bind(fd, (struct sockaddr *)&server_addr, sizeof(server_addr));
 		if(listen(fd,10)<0){
 			fprintf(stderr, "Error: Not able to listen :( \n");
-			return 0;
+			
 		}
 
 		while(1){
-			connection = (conn_th *)malloc(sizeof(conn_th));
+			conn_th *connection = (conn_th *)malloc(sizeof(conn_th));
 			connection->sock = accept(fd, &connection->address, &connection->addr_len);
 			if(connection->sock > 0 ){
 				connection->ssh_addr = ssh_addr;
 				connection->key = Key;
-				pthread_create(&thread, 0, server_process, (void)* connection);
+				pthread_create(&thread, 0, server_process, (void*) connection);
 				pthread_detach(thread);
 			}
 			else{
-				free(conncetion);
+				free(connection);
 			}
 		  
 		}
@@ -332,8 +333,8 @@ void main(int argc, char *argv[]) {
 
 		int cFlag = connect(fd_client, (struct sockaddr *)&server_addr, sizeof(server_addr));
 		if (cFlag == -1) {
-			fprintf(stderr, "Error: Connection Unsuccessful :( \n", );
-			return 0;
+			fprintf(stderr, "Error: Connection Unsuccessful :( \n" );
+			
 		}
 
 		fcntl(STDIN_FILENO, F_SETFL, O_NONBLOCK);
@@ -344,7 +345,7 @@ void main(int argc, char *argv[]) {
 		unsigned char iv[8];
 		AES_KEY aes_key;
 
-		if (AES_set_encrypt_key(connected->key, 128, &aes_key) < 0){
+		if (AES_set_encrypt_key(Key, 128, &aes_key) < 0){
 			fprintf(stderr, "Error: Couldnt set encryption. \n");
 			exit(1);
 		}
@@ -353,7 +354,7 @@ void main(int argc, char *argv[]) {
 		while(1){
 			while((check = read(STDIN_FILENO, buf, 4096))>=0){			
 				if(!RAND_bytes(iv, 8)) {
-					fprintf(stderr, "Error: generating random bytes \n", );
+					fprintf(stderr, "Error: generating random bytes \n" );
 					exit(1);
 				}
 				// incrementing the IV by 8, adjustment factor
@@ -379,7 +380,7 @@ void main(int argc, char *argv[]) {
 					fprintf(stderr, "Error:PLength smaller than 8 \n");
 					//Close connection as socket open error occurred.
 					close(fd_client);
-					return 0;
+					
 				}
 				//copy the IV in the buffer.
 				memcpy(iv, buf, 8);
