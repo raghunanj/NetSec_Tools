@@ -82,10 +82,9 @@ void* server_process(void* th_p) {
 	//Opening a socket connection
 	int fd = socket(AF_INET, SOCK_STREAM, 0);
 
-	int my_flag = connect(fd, (struct sockaddr *)&connected->ssh_addr, sizeof(connected->ssh_addr));
 
 	//Server socket connection status check
-	if (my_flag == -1) {
+	if (connect(fd, (struct sockaddr *)&connected->ssh_addr, sizeof(connected->ssh_addr)) == -1) {
 		printf("connection Unsuccessful :/ \n");
 		//Exit the thread.
 		pthread_exit(0);
@@ -108,7 +107,9 @@ void* server_process(void* th_p) {
 	fcntl(connected->sock, F_SETFL, dup_flag | O_NONBLOCK);
 
 	// GEt the File status flags
-	if((fcntl(fd, F_GETFL)) == -1){
+	dup_flag = fcntl(fd, F_GETFL);
+	//if((fcntl(fd, F_GETFL)) == -1){
+	if (dup_flag == -1){
 		printf("Error : Could not open the file ");
 		pthread_exit(0);
 	}
