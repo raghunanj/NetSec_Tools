@@ -5,7 +5,9 @@
 #include <stdlib.h>
 #include <fcntl.h>
 
-#include<openssl/aes.h>
+#include <openssl/aes.h>
+#include <openssl/buffer.h>
+#include <openssl/rand.h>
 
 typedef struct {
 	int sock;
@@ -125,16 +127,112 @@ void* server_process(void* th_p) {
 			init_ctr(&state,iv);		
 			unsigned char decryptV[check-8];
 			AES_ctr128_encrypt(buf+8, decryptV, check-8, &aes_key, state.ivec, state.ecount, &state.num );
-			write(fd, )
-
+			// write the encrpyted contents to the file 
+			write(fd, decryptV, check-8 );
+			//Error case, where check indicates the relay factor
+			if (check < 4096 ){
+				break;
+			}
 		}
+
+		//When server is actually sending the info
+		while((check = read(fd, buf, 4096))>=0){
+			if(check > 0){
+				if(!RAND_bytes(iv, 8)) {
+					fprintf(stderr, "Error: generating random bytes \n", );
+					exit(1);
+				}
+				// incrementing the IV by 8, adjustment factor
+				char* temp = (char*)malloc(check+8);
+				memcpy(temp,iv,8);
+
+				init_ctr(&state, iv);
+				unsigned char encryptV[check];
+				AES_ctr128_encrypt(buf, encryptV, check, &aes_key, state.ivec, state.ecount, &state.num);
+				memcpy(temp+8, encryptV, check);
+				//Relaying/writing the info on the socket
+				write(connected->sock, temp, check+8);
+			}
+
+			//If all the info has been sent exit from the loop or connection
+			if (ssh_flag == 0 && check == 0){
+				ssh_flag = 1;
+			}
+
+			//absurd case
+			if(check < 4096){
+				break;
+			}
+		}
+
+		if(ssh_flag){
+			break;
+		}
+
 	}
+
+	//Failure to establish a connection
+	printf("Error: No connection established ");
+	//Close connection as socket open error occurred.
+	close(connected->sock);
+	close(fd);
+	//Exit the thread.
+	pthread_exit(0);
 }
 
 
 int main(int argc, char *argv[]) {
+	int inputOptions = 0;
+	int flag_server = 0;
+	char *InpKeyFile = NULL;
+	char *source_port = NULL;
+	char *destn_host = NULL;
+	char *dest_port = NULL;
 
-	// Some code for listening and parsing the input arguments
+	
+	while ((inputOptions = getopt(argc, argv, "l:k")) != -1) {
+		switch(inputOptions) {
+			case 'l':
+				source_port = optarg;
+				flag_server = 1;
+				break;
+			case 'k':
+				InpKeyFile = optarg;
+				break;
+			case '?':
+				if (optopt == 'l') {
+					fprintf(stderr, "Port number missing in the arguments\n");
+					return 0;
+				} else if (optopt == 'k') {
+					fprintf(stderr, "No Key file in the argument\n");
+					return 0;
+				} else {
+					fprintf(stderr, "Absurd case\n");
+					return 0;
+				}
+			default:
+				fprintf(stderr, "Wrong arguments\n");
+				return 0;
+		}
+	}
+	
+	// get destination ip and port
+	if (optind == argc - 2) {
+		destn_host = argv[optind];
+		dest_port = argv[optind+1];
+	} else {
+		fprintf(stderr, "optind: %d, argc: %d\n", optind, argc);
+		fprintf(stderr, "Incorrect destination and port arguments. Exiting...\n");
+		return 0;
+	}
+	
+	if (InpKeyFile == NULL) {
+		fprintf(stderr, "Key file not specified!\n");
+		return 0;
+	}
+	
+	fprintf(stderr, "\n Execution starting with the PbProxy :\n server mode: %s\t listening port: %s\t key file: %s\t destination addr: %s\t destination port: %s\n", source_port, InpKeyFile,destn_host, dest_port);
+
 
 }
 
