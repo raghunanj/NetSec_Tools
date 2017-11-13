@@ -5,7 +5,6 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <sys/types.h>
-#include <fcntl.h>
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
@@ -17,9 +16,9 @@
 
 typedef struct {
 	int sock;
-	int addr_len;
-	struct sockaddr_in ssh_addr;
 	struct sockaddr address;
+	struct sockaddr_in ssh_addr;
+	int addr_len;
 	const char *key;
 } conn_th;
 
@@ -39,8 +38,8 @@ struct hostent {
 }
 */
 
-char* read_file(char* filename){
-	char* buf = NULL;
+char* read_file(const char* filename){
+	char* buf = 0;
 	unsigned long len;
 	FILE *fd = fopen(filename, "rb");
 
@@ -128,7 +127,7 @@ void* server_process(void* th_p) {
 	// Listening connection
 	int check;
 	while(1){
-		while((check = read(connected->sock, buf, 4096))>0){
+		while((check = read(connected->sock, buf, 4096)) > 0){
 			if (check < 8){
 				printf("Error:PLength smaller than 8 \n");
 				//Close connection as socket open error occurred.
@@ -151,7 +150,7 @@ void* server_process(void* th_p) {
 			if (check < 4096 ){
 				break;
 			}
-		}
+		};
 
 		//When server is actually sending the info
 		while((check = read(fd, buf, 4096))>=0){			
@@ -254,7 +253,7 @@ void main(int argc, char *argv[]) {
 	fprintf(stderr, "\n Execution starting with the PbProxy :\n listening port: %s\t key file: %s\t destination addr: %s\t destination port: %s\n", source_port, InpKeyFile,destn_host, dest_port);
 
 	//Read the input Key File.
-	const char * Key = read_file(InpKeyFile);
+	unsigned const char *Key = read_file(InpKeyFile);
 	if(!Key) {
 		fprintf(stderr, "Error: Key Reading has failed!");
 		
@@ -279,8 +278,7 @@ void main(int argc, char *argv[]) {
 
 	//parse the input destn port & listen_port number.
 	int dst_port = (int)strtol(dest_port, NULL, 10);
-	//parse the listen port number
-	int listen_port = (int)strtol(source_port, NULL, 10);
+	
 
 	struct sockaddr_in server_addr, ssh_addr;
 
@@ -290,11 +288,14 @@ void main(int argc, char *argv[]) {
 	//	bzero(&ssh_addr,sizeof(ssh_addr));	
 	bzero(&server_addr,sizeof(ssh_addr));
 
-	if(flag_server){
+	if(flag_server == 1){
 		//conn_th* connected = (conn_th *)th_p;
 		
 		pthread_t thread;
-		int fd = socket(AF_INET, SOCK_STREAM,0);
+		int fd_l = socket(AF_INET, SOCK_STREAM,0);
+		conn_th *connection;
+		//parse the listen port number
+		int listen_port = (int)strtol(source_port, NULL, 10);
 
 		server_addr.sin_family = AF_INET;
 		// converts the unsigned short integer hostshort from host byte order to network byte order
@@ -307,19 +308,19 @@ void main(int argc, char *argv[]) {
 
 		//binding the connection
 
-		bind(fd, (struct sockaddr *)&server_addr, sizeof(server_addr));
-		if(listen(fd,10)<0){
+		bind(fd_l, (struct sockaddr *)&server_addr, sizeof(server_addr));
+		if(listen(fd_l,10)<0){
 			fprintf(stderr, "Error: Not able to listen :( \n");
 			
-		}
+		};
 
 		while(1){
-			conn_th *connection = (conn_th *)malloc(sizeof(conn_th));
-			connection->sock = accept(fd, &connection->address, &connection->addr_len);
+			connection = (conn_th *)malloc(sizeof(conn_th));
+			connection->sock = accept(fd_l, &connection->address, &connection->addr_len);
 			if(connection->sock > 0 ){
 				connection->ssh_addr = ssh_addr;
 				connection->key = Key;
-				pthread_create(&thread, 0, server_process, (void*) connection);
+				pthread_create(&thread, 0, server_process, (void*)connection);
 				pthread_detach(thread);
 			}
 			else{
@@ -336,8 +337,8 @@ void main(int argc, char *argv[]) {
 		server_addr.sin_port = htons(dst_port);
 		server_addr.sin_addr.s_addr = ((struct in_addr *) (host_pack->h_addr))->s_addr;
 
-		int cFlag = connect(fd_client, (struct sockaddr *)&server_addr, sizeof(server_addr));
-		if (cFlag == -1) {
+		//int cFlag = connect(fd_client, (struct sockaddr *)&server_addr, sizeof(server_addr));
+		if (connect(fd_client, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1) {
 			fprintf(stderr, "Error: Connection Unsuccessful :( \n" );
 			
 		}
@@ -395,7 +396,7 @@ void main(int argc, char *argv[]) {
 				unsigned char decryptV[check-8];
 				AES_ctr128_encrypt(buf+8, decryptV, check-8, &aes_key, state.ivec, state.ecount, &state.num );
 				// write the encrpyted contents to the file 
-				write(STDIN_FILENO, decryptV, check-8 );
+				write(STDOUT_FILENO, decryptV, check-8 );
 				//Error case, where check indicates the relay factor
 				if (check < 4096 ){
 					break;
